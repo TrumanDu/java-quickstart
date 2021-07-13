@@ -12,4 +12,14 @@
     <artifactId>quickstart-redis</artifactId>
 
 
+
+    <dependencies>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+    </dependencies>
+
+
 </project>
