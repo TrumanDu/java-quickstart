@@ -1,4 +1,4 @@
-package top.trumandu;
+package com.newegg.ecbd.kafka;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -125,7 +125,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
     }
 
     public class ConsumerThread<K, V> implements Runnable {
-        private KafkaConsumer<K, V> consumer;
+        private org.apache.kafka.clients.consumer.KafkaConsumer<K, V> consumer;
         private Properties consumerProperties;
         private final MessageWatched messageHandle;
         private final String topic;
@@ -153,7 +153,8 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         @Override
         public void run() {
             if (!consumerProperties.containsKey(ConsumerConfig.CLIENT_ID_CONFIG)) {
-                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, getHostName() + "_" + Thread.currentThread().getName());
+                int random = (int) (Math.random() * (100 - 1) + 1);
+                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, getHostName() + "_" + Thread.currentThread().getName() + "_" + random);
             }
             consumer = new KafkaConsumer<K, V>(consumerProperties);
             consumer.subscribe(Arrays.asList(topic));
