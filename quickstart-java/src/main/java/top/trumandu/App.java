@@ -10,22 +10,34 @@ import org.slf4j.LoggerFactory;
 public class App {
     private static Logger logger = LoggerFactory.getLogger(App.class);
 
-    public static void main(String[] args) {
-        /*logger.debug("debug");
-    	logger.error("error");
-    	logger.info("info");
-        System.out.println( "Hello World!" );*/
-        /*System.out.println("dae4dbb77268855c9a42a558d17e2dbd466c584ecb3fe92eb55c967601378a68|USA".hashCode());
 
-        System.out.println("dae4dbb77268855c9a42a558d17e2dbd466c584ecb3fe92eb55c967601378a68|USA".getBytes().hashCode());*/
-        //System.out.println(Math.abs("dae4dbb77268855c9a42a558d17e2dbd466c584ecb3fe92eb55c967601378a68|USA".hashCode()) % 100+1);
-    	
-    	Long l1 = 127L;
-    	Long l2 = 127L;
-    	System.out.println(l1.equals(l2));
+
+    public static void main(String[] args) {
+        User user = new User("a");
+        App app = new App();
+        app.show(user);
+        System.out.println(user.getName());
+
     }
 
-    public void show() {
-        System.out.println("class 2");
+    public synchronized void show(User user) {
+        user = new User("b");
+    }
+
+    static class User {
+        private String name;
+
+        public User(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }
+
