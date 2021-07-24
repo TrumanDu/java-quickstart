@@ -1,11 +1,11 @@
 package top.trumandu.lock;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Truman.P.Du
@@ -13,44 +13,41 @@ import java.util.concurrent.locks.ReentrantLock;
  * @description
  */
 public class LockTest {
-    Lock lock = new ReentrantLock();
 
-    public void  increase(Integer i) {
-        lock.lock();
-        try {
-            i=i+1;
-        } finally {
-            lock.unlock();
-        }
-    }
+    ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private int num = 0;
 
-    public static void main(String[] args) {
+
+
+    public static void main(String[] args) throws InterruptedException {
         LockTest lockTest = new LockTest();
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(5, 200,
-                50L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(1024), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());;
-        threadPoolExecutor.allowCoreThreadTimeOut(true);
-                Integer i = 0;
-        for (int j = 0; j < 1_000; j++) {
-            Integer finalI = i;
-            threadPoolExecutor.execute(()->{
-                lockTest.increase(finalI);
-            });
-        }
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        while (threadPoolExecutor.getActiveCount() > 0) {
+        CountDownLatch countDownLatch  = new CountDownLatch(2);
+        Lock lock = new ReentrantLock();
+        new Thread(()->{
+            for (int i = 0; i < 100_000; i++) {
+                lock.lock();
+                try {
+                    lockTest.num = lockTest.num+1;
+                } finally {
+                    lock.unlock();
+                }
+            }
+            countDownLatch.countDown();
+        },"thread 1").start();
 
-        }
-        System.out.println(i);
+        new Thread(()->{
+            for (int i = 0; i < 100_000; i++) {
+                lock.lock();
+                try {
+                    lockTest.num = lockTest.num+1;
+                } finally {
+                    lock.unlock();
+                }
+            }
+            countDownLatch.countDown();
+        },"thread 2").start();
 
-
-        for (int j = 0; j < 100; j++) {
-            i = i+1;
-            System.out.println(i.hashCode());
-        }
+        countDownLatch.await(1, TimeUnit.MINUTES);
+        System.out.println("end:"+lockTest.num);
     }
 }
