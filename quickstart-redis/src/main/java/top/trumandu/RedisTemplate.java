@@ -93,12 +93,28 @@ public class RedisTemplate implements Closeable {
         return jedisCluster.exists(wrapKey(key));
     }
 
+    public String get(String key) {
+        return jedisCluster.get(wrapKey(key));
+    }
+
     public Long incr(String key) {
         return jedisCluster.incr(wrapKey(key));
     }
 
     public Long del(String key) {
         return jedisCluster.del(wrapKey(key));
+    }
+
+    public Long ttl(String key){
+        return jedisCluster.ttl(wrapKey(key));
+    }
+
+    public Long sadd(String key,String... member){
+        return jedisCluster.sadd(wrapKey(key),member);
+    }
+
+    public Long scard(String key){
+        return jedisCluster.scard(wrapKey(key));
     }
 
     @Override
