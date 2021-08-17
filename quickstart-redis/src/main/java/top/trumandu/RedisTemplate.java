@@ -1,10 +1,9 @@
 package top.trumandu;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.BinaryJedisCluster;
 import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.SetParams;
 
 import java.io.Closeable;
@@ -22,7 +21,7 @@ public class RedisTemplate implements Closeable {
     private JedisCluster jedisCluster;
     private String keyPrefix;
 
-    private static String clientName = "xaecbd-sns";
+    private static String clientName = "lab";
 
     private RedisTemplate(RedisBuilder builder) {
         final String[] hosts = builder.hosts.split(RedisConstants.HOST_SPLIT);
@@ -41,7 +40,7 @@ public class RedisTemplate implements Closeable {
                 }
             }
         };
-        this.jedisCluster = new JedisCluster(nodes, builder.timeout, builder.timeout, builder.retry, builder.password, clientName,new GenericObjectPoolConfig<Jedis>());
+        this.jedisCluster = new JedisCluster(nodes, builder.timeout, builder.timeout, builder.retry, builder.password, clientName,buildPoolConfig());
     }
 
     private static class RedisConstants {
@@ -115,6 +114,13 @@ public class RedisTemplate implements Closeable {
 
     public Long scard(String key){
         return jedisCluster.scard(wrapKey(key));
+    }
+
+    private static JedisPoolConfig buildPoolConfig() {
+        JedisPoolConfig config = new JedisPoolConfig();
+        config.setTestWhileIdle(true);
+        config.setMinEvictableIdleTimeMillis(1_800_000);
+        return config;
     }
 
     @Override
