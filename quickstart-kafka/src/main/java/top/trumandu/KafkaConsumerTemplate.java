@@ -1,4 +1,4 @@
-package com.newegg.ecbd.kafka;
+package top.trumandu;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -13,13 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class KafkaConsumerTemplate<K, V> implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerTemplate.class);
+    private static final AtomicInteger CONSUMER_CLIENT_ID_SEQUENCE = new AtomicInteger(1);
     ThreadFactory threadFactory = null;
     private ExecutorService executorService;
     private final List<ConsumerThread> consumers = new ArrayList<>();
@@ -153,8 +153,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         @Override
         public void run() {
             if (!consumerProperties.containsKey(ConsumerConfig.CLIENT_ID_CONFIG)) {
-                int random = (int) (Math.random() * (100 - 1) + 1);
-                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, getHostName() + "_" + Thread.currentThread().getName() + "_" + random);
+                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG,Thread.currentThread().getName() + "_" + CONSUMER_CLIENT_ID_SEQUENCE.getAndIncrement());
             }
             consumer = new KafkaConsumer<K, V>(consumerProperties);
             consumer.subscribe(Arrays.asList(topic));
@@ -218,31 +217,5 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "9000");
         return props;
-    }
-
-    private static String getHostNameForLinux() {
-        try {
-            return (InetAddress.getLocalHost()).getHostName();
-        } catch (UnknownHostException uhe) {
-            // host = "hostname: hostname"
-            String host = uhe.getMessage();
-            if (host != null) {
-                int colon = host.indexOf(':');
-                if (colon > 0) {
-                    return host.substring(0, colon);
-                }
-            }
-            return "UnknownHost";
-        }
-    }
-
-    private static String COMPUTER_NAME = "COMPUTERNAME";
-
-    private static String getHostName() {
-        if (System.getenv(COMPUTER_NAME) != null) {
-            return System.getenv(COMPUTER_NAME);
-        } else {
-            return getHostNameForLinux();
-        }
     }
 }
