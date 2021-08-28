@@ -15,7 +15,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +29,6 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerTemplate.class);
     private static final AtomicInteger CONSUMER_CLIENT_ID_SEQUENCE = new AtomicInteger(1);
     ThreadFactory threadFactory = null;
-    private ExecutorService executorService;
     private final List<ConsumerThread> consumers = new ArrayList<>();
 
     private String hosts;
@@ -70,7 +68,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         }
     }
 
-    public void addThread(int thread) {
+    public synchronized void addThread(int thread) {
         for (int i = 0; i < thread; i++) {
             ConsumerThread consumerThread = new ConsumerThread(hosts, topic, group, watched, consumerProperties);
             threadFactory.newThread(consumerThread).start();
@@ -78,7 +76,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         }
     }
 
-    public void subtractThread(int thread) {
+    public synchronized void subtractThread(int thread) {
         for (int i = 0; i < thread; i++) {
             ConsumerThread consumerThread = consumers.get(0);
             consumerThread.close();
@@ -144,16 +142,17 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
             this.topic = topic;
             this.messageHandle = messageHandle;
             if (consumerProperties == null) {
-                this.consumerProperties = KafkaConsumerTemplate.buildDefaultConsumerConfig(brokers, group);
+                this.consumerProperties = (Properties) KafkaConsumerTemplate.buildDefaultConsumerConfig(brokers, group).clone();
             } else {
-                this.consumerProperties = consumerProperties;
+                this.consumerProperties = (Properties) consumerProperties.clone();
             }
         }
 
         @Override
         public void run() {
             if (!consumerProperties.containsKey(ConsumerConfig.CLIENT_ID_CONFIG)) {
-                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG,Thread.currentThread().getName() + "_" + CONSUMER_CLIENT_ID_SEQUENCE.getAndIncrement());
+                String clientId = Thread.currentThread().getName() + "_" + CONSUMER_CLIENT_ID_SEQUENCE.getAndIncrement();
+                this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
             }
             consumer = new KafkaConsumer<K, V>(consumerProperties);
             consumer.subscribe(Arrays.asList(topic));

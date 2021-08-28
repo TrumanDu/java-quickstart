@@ -13,7 +13,7 @@ public class CountDownLathDemo {
     public static void main(String[] args) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(1000 * 60);
             } catch (InterruptedException e) {
@@ -21,8 +21,14 @@ public class CountDownLathDemo {
             }
             System.out.println("execute success.");
             latch.countDown();
-        }).start();
+        });
+        thread.setDaemon(true);
+        thread.start();
 
-        latch.await(10, TimeUnit.SECONDS);
+        boolean result = latch.await(10, TimeUnit.SECONDS);
+        if(!result){
+            System.out.println("timeout.");
+        }
+
     }
 }
