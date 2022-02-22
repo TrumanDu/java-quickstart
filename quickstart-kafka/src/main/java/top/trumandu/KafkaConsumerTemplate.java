@@ -166,7 +166,8 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
                         if (!messageHandle.onMessage(consumerProperties.getProperty(ConsumerConfig.GROUP_ID_CONFIG), records)) {
                             LOGGER.error(String.format("topic:%s, group:%s has error.", topic, consumerProperties.getProperty(ConsumerConfig.GROUP_ID_CONFIG)));
                         }
-                        consumer.commitAsync();
+                        // 如果records为空，这里的提交可能导致报错
+                        //consumer.commitAsync();
                     } catch (Exception e) {
                         LOGGER.error("ConsumerThread processing message have errors", e);
                     }
@@ -208,7 +209,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, group);
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
