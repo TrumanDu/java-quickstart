@@ -18,6 +18,6 @@ public class ConcreteDecoratorB extends Decorator {
     @Override
     public void operation() {
         addFunction();
-        super.operation();
+        this.component.operation();
     }
 }

@@ -7,8 +7,7 @@ package top.trumandu.patterns.decorator;
  */
 public class Test {
     public static void main(String[] args) {
-        Component component = new ConcreteComponent();
-        Decorator decorator = new ConcreteDecoratorA(component);
-        decorator.operation();
+        Component component  = new ConcreteDecoratorB(new ConcreteDecoratorA(new ConcreteComponent()));
+        component.operation();
     }
 }
