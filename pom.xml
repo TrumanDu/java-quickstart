@@ -18,6 +18,7 @@
         <module>quickstart-elasticsearch</module>
         <module>quickstart-redis</module>
         <module>quickstart-java</module>
+        <module>quickstart-hbase</module>
     </modules>
 
     <dependencies>

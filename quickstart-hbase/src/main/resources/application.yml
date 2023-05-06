@@ -1,0 +1,5 @@
+server.port: 8060
+
+db.hbase:
+  host: 127.0.0.1
+  port: 2181
