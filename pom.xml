@@ -19,6 +19,7 @@
         <module>quickstart-redis</module>
         <module>quickstart-java</module>
         <module>quickstart-hbase</module>
+        <module>quickstart-springboot-multi-database</module>
     </modules>
 
     <dependencies>

@@ -20,7 +20,6 @@ public class KafkaAdminTest {
 
     @Test
     public void test() {
-
     }
 
     @After

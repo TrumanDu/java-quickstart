@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @date 2021/06/09
  * @description
  */
+@SuppressWarnings("unused")
 public class KafkaConsumerTemplate<K, V> implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerTemplate.class);
     private static final AtomicInteger CONSUMER_CLIENT_ID_SEQUENCE = new AtomicInteger(1);

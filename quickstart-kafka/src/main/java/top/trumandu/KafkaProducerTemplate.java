@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException;
  * @date 2021/06/09
  * @description
  */
+@SuppressWarnings("unused")
 public class KafkaProducerTemplate<K, V> implements Closeable {
     public KafkaProducer<K, V> producer;
 

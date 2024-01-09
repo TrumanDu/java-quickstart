@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
  * @date 2021/06/09
  * @description
  */
+@SuppressWarnings("unused")
 public class KafkaAdminTemplate implements Closeable {
     private AdminClient adminClient;
     private String bootstrapServers;
