@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>1.8</jdk.version>
+        <jdk.version>21</jdk.version>
     </properties>
     <modules>
         <module>quickstart-springboot</module>
@@ -18,8 +18,9 @@
         <module>quickstart-elasticsearch</module>
         <module>quickstart-redis</module>
         <module>quickstart-java</module>
-        <module>quickstart-hbase</module>
+        <!--<module>quickstart-hbase</module>-->
         <module>quickstart-springboot-multi-database</module>
+        <!--<module>quickstart-hadoop</module>-->
     </modules>
 
     <dependencies>
@@ -63,5 +64,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -188,7 +188,7 @@ public class HbaseClient implements Closeable {
         Table table = getTable(tableName);
         try {
             Scan scan = new Scan();
-            if (startWith != null && !"".equals(startWith)) {
+            if (startWith != null && !startWith.isEmpty()) {
                 scan.setRowPrefixFilter(Bytes.toBytes(startWith));
             }
             scan.setCaching(100);
@@ -227,7 +227,7 @@ public class HbaseClient implements Closeable {
         Table table = getTable(tableName);
         try {
             Scan scan = new Scan();
-            if (startWith != null && !"".equals(startWith)) {
+            if (startWith != null && !startWith.isEmpty()) {
                 scan.setRowPrefixFilter(Bytes.toBytes(startWith));
             }
             if (Objects.nonNull(columns)) {
@@ -274,7 +274,7 @@ public class HbaseClient implements Closeable {
         Table table = getTable(tableName);
         try {
             Scan scan = new Scan();
-            if (regex != null && !"".equals(regex)) {
+            if (regex != null && !regex.isEmpty()) {
                 SingleColumnValueFilter columnValueFilter = new SingleColumnValueFilter(
                         Bytes.toBytes(filterFamily), Bytes.toBytes(filterColumn), CompareFilter.CompareOp.EQUAL, new RegexStringComparator(regex));
                 scan.setFilter(columnValueFilter);
@@ -315,7 +315,7 @@ public class HbaseClient implements Closeable {
         Table table = getTable(tableName);
         try {
             Scan scan = new Scan();
-            if (regex != null && !"".equals(regex)) {
+            if (regex != null && !regex.isEmpty()) {
                 RowFilter filter = new RowFilter(CompareFilter.CompareOp.EQUAL, new RegexStringComparator(regex));
                 scan.setFilter(filter);
             }

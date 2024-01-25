@@ -1,32 +1,32 @@
 package top.trumandu;
 
-import redis.clients.jedis.BinaryJedisCluster;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import redis.clients.jedis.Connection;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.SetParams;
 
 import java.io.Closeable;
-import java.io.IOException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * @author Truman.P.Du
  * @date 2021/06/09
- * @description
  */
+@SuppressWarnings("unused")
 public class RedisTemplate implements Closeable {
 
-    private JedisCluster jedisCluster;
-    private String keyPrefix;
+    private final JedisCluster jedisCluster;
+    private final String keyPrefix;
 
-    private static String clientName = "lab";
+    private final static String CLIENT_NAME = "lab";
 
     private RedisTemplate(RedisBuilder builder) {
         final String[] hosts = builder.hosts.split(RedisConstants.HOST_SPLIT);
         keyPrefix = builder.prefix;
-        Set<HostAndPort> nodes = new HashSet<HostAndPort>() {
+        Set<HostAndPort> nodes = new HashSet<>() {
             private static final long serialVersionUID = 5341345879054512402L;
 
             {
@@ -40,11 +40,11 @@ public class RedisTemplate implements Closeable {
                 }
             }
         };
-        this.jedisCluster = new JedisCluster(nodes, builder.timeout, builder.timeout, builder.retry, builder.password, clientName,buildPoolConfig());
+        this.jedisCluster = new JedisCluster(nodes, builder.timeout, builder.timeout, builder.retry, builder.password, CLIENT_NAME, buildPoolConfig());
     }
 
     private static class RedisConstants {
-        private static final String OK = "OK";
+        private static final String HANDLE_SUCCESS = "OK";
         private static final String HOST_SPLIT = ",";
         private static final int DEFAULT_PORT = 6379;
     }
@@ -56,9 +56,6 @@ public class RedisTemplate implements Closeable {
     /**
      * 如果key,不存在的话写入，并且设置ttl
      *
-     * @param key
-     * @param value
-     * @param ttl
      * @return true:不存在，写入成功，false:key存在，未写入成功。
      */
     public boolean setnx(String key, String value, long ttl) {
@@ -66,26 +63,13 @@ public class RedisTemplate implements Closeable {
         setParams = setParams.ex(ttl);
         setParams = setParams.nx();
         String result = jedisCluster.set(wrapKey(key), value, setParams);
-        if (RedisConstants.OK.equalsIgnoreCase(result)) {
-            return true;
-        }
-        return false;
+        return RedisConstants.HANDLE_SUCCESS.equalsIgnoreCase(result);
     }
 
-    /**
-     * @param key
-     * @param value
-     * @param ttl
-     * @return
-     */
-    public boolean set(String key, String value, long ttl) {
+    public void set(String key, String value, long ttl) {
         SetParams setParams = new SetParams();
         setParams = setParams.ex(ttl);
         String result = jedisCluster.set(wrapKey(key), value, setParams);
-        if (RedisConstants.OK.equalsIgnoreCase(result)) {
-            return true;
-        }
-        return false;
     }
 
     public boolean exists(String key) {
@@ -104,37 +88,37 @@ public class RedisTemplate implements Closeable {
         return jedisCluster.del(wrapKey(key));
     }
 
-    public Long ttl(String key){
+    public Long ttl(String key) {
         return jedisCluster.ttl(wrapKey(key));
     }
 
-    public Long sadd(String key,String... member){
-        return jedisCluster.sadd(wrapKey(key),member);
+    public Long sadd(String key, String... member) {
+        return jedisCluster.sadd(wrapKey(key), member);
     }
 
-    public Long scard(String key){
+    public Long scard(String key) {
         return jedisCluster.scard(wrapKey(key));
     }
 
-    private static JedisPoolConfig buildPoolConfig() {
-        JedisPoolConfig config = new JedisPoolConfig();
-        config.setTestWhileIdle(true);
-        config.setMinEvictableIdleTimeMillis(1_800_000);
-        return config;
+    private static GenericObjectPoolConfig<Connection> buildPoolConfig() {
+        GenericObjectPoolConfig<Connection> poolConfig = new GenericObjectPoolConfig<>();
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setMinEvictableIdleDuration(Duration.ofMillis(1_800_000));
+        return poolConfig;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (jedisCluster != null) {
             jedisCluster.close();
         }
     }
 
     public static class RedisBuilder {
-        private String hosts;
+        private final String hosts;
         private String prefix;
-        private int timeout = BinaryJedisCluster.DEFAULT_TIMEOUT;
-        private int retry = BinaryJedisCluster.DEFAULT_MAX_ATTEMPTS;
+        private int timeout = JedisCluster.DEFAULT_TIMEOUT;
+        private int retry = JedisCluster.DEFAULT_MAX_ATTEMPTS;
         private String password = null;
 
         public RedisBuilder(String hosts) {

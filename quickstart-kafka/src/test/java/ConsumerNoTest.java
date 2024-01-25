@@ -13,20 +13,17 @@ import java.util.Properties;
  * @description
  */
 
-public class ConsumerTest {
+public class ConsumerNoTest {
     @Test
     public void consumer() {
         Properties props = new Properties();
-        props.setProperty("bootstrap.servers", "127.0.0.1:9093");
+        props.setProperty("bootstrap.servers", "127.0.0.1:9092");
         props.setProperty("group.id", "test");
         props.setProperty("enable.auto.commit", "true");
         props.setProperty("auto.commit.interval.ms", "1000");
         props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
-        props.setProperty("security.protocol", "SASL_PLAINTEXT");
-        props.setProperty("sasl.mechanism", "SCRAM-SHA-256");
-        props.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required  username=\"truman\" password=\"123456\";");
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Arrays.asList("truman_test"));
         while (true) {

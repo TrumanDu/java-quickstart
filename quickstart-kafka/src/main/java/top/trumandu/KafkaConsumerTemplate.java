@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
@@ -23,27 +22,26 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Truman.P.Du
  * @date 2021/06/09
- * @description
  */
 @SuppressWarnings("unused")
 public class KafkaConsumerTemplate<K, V> implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerTemplate.class);
     private static final AtomicInteger CONSUMER_CLIENT_ID_SEQUENCE = new AtomicInteger(1);
-    ThreadFactory threadFactory = null;
-    private final List<ConsumerThread> consumers = new ArrayList<>();
+    ThreadFactory threadFactory;
+    private final List<ConsumerThread<K, V>> consumers = new ArrayList<>();
 
-    private String hosts;
-    private String topic;
-    private String group;
-    private MessageWatched watched;
-    private Properties consumerProperties;
+    private final String hosts;
+    private final String topic;
+    private final String group;
+    private final MessageWatched<K, V> watched;
+    private final Properties consumerProperties;
 
-    public KafkaConsumerTemplate(String hosts, String topic, String group, int threadSize, MessageWatched watched) {
+    public KafkaConsumerTemplate(String hosts, String topic, String group, int threadSize, MessageWatched<K, V> watched) {
         this(hosts, topic, group, threadSize, watched, null);
     }
 
 
-    public KafkaConsumerTemplate(String hosts, String topic, String group, int threadSize, MessageWatched watched, Properties consumerProperties) {
+    public KafkaConsumerTemplate(String hosts, String topic, String group, int threadSize, MessageWatched<K, V> watched, Properties consumerProperties) {
         this.hosts = hosts;
         this.topic = topic;
         this.group = group;
@@ -52,7 +50,7 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
         threadFactory = new ThreadFactoryBuilder().setNameFormat("consumer-" + group.toLowerCase() + "-%d").build();
 
         for (int i = 0; i < threadSize; i++) {
-            ConsumerThread consumerThread = new ConsumerThread(hosts, topic, group, watched, consumerProperties);
+            ConsumerThread<K, V> consumerThread = new ConsumerThread<>(hosts, topic, group, watched, consumerProperties);
             threadFactory.newThread(consumerThread).start();
             consumers.add(consumerThread);
         }
@@ -64,14 +62,14 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
     }
 
     public void slowSpeed(long sleep) {
-        for (ConsumerThread consumerThread : consumers) {
+        for (ConsumerThread<K, V> consumerThread : consumers) {
             consumerThread.slowSpeed(sleep);
         }
     }
 
     public synchronized void addThread(int thread) {
         for (int i = 0; i < thread; i++) {
-            ConsumerThread consumerThread = new ConsumerThread(hosts, topic, group, watched, consumerProperties);
+            ConsumerThread<K, V> consumerThread = new ConsumerThread<>(hosts, topic, group, watched, consumerProperties);
             threadFactory.newThread(consumerThread).start();
             consumers.add(consumerThread);
         }
@@ -79,16 +77,16 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
 
     public synchronized void subtractThread(int thread) {
         for (int i = 0; i < thread; i++) {
-            ConsumerThread consumerThread = consumers.get(0);
+            ConsumerThread<K, V> consumerThread = consumers.get(0);
             consumerThread.close();
             consumers.remove(0);
         }
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
-        for (ConsumerThread consumerThread : consumers) {
+        for (ConsumerThread<K, V> consumerThread : consumers) {
             consumerThread.close();
         }
         consumers.clear();
@@ -99,47 +97,46 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
 
         /**
          * 处理单条消息
-         *
-         * @param group
-         * @param record
-         * @return
-         * @throws Exception
+         * @param group 消费组名称
+         * @param record 消息
+         * @return 如果返回false，则只代表不提交offset
+         * @throws Exception 处理异常
          */
-        public default boolean onMessage(String group, ConsumerRecord<K, V> record) throws Exception {
+        default boolean onMessage(String group, ConsumerRecord<K, V> record) throws Exception {
             Map<TopicPartition, List<ConsumerRecord<K, V>>> map = new HashMap<>(MAP_SIZE);
-            map.put(new TopicPartition(record.topic(), record.partition()), Arrays.asList(record));
-            ConsumerRecords<K, V> records = new ConsumerRecords(map);
+            map.put(new TopicPartition(record.topic(), record.partition()), Collections.singletonList(record));
+            ConsumerRecords<K, V> records = new ConsumerRecords<>(map);
             return this.onMessage(group, records);
         }
 
         /**
          * 处理多条消息
          *
-         * @param group
-         * @param records
+         * @param group   消费组名称
+         * @param records 消息集合
          * @return 如果返回false，则只代表不提交offset
-         * @throws Exception
+         * @throws Exception 处理异常
          */
-        public boolean onMessage(String group, ConsumerRecords<K, V> records) throws Exception;
+        boolean onMessage(String group, ConsumerRecords<K, V> records) throws Exception;
     }
 
-    public class ConsumerThread<K, V> implements Runnable {
-        private org.apache.kafka.clients.consumer.KafkaConsumer<K, V> consumer;
-        private Properties consumerProperties;
-        private final MessageWatched messageHandle;
+    public class ConsumerThread<KK, VV> implements Runnable {
+        private org.apache.kafka.clients.consumer.KafkaConsumer<KK, VV> consumer;
+        private final Properties consumerProperties;
+        private final MessageWatched<KK, VV> messageHandle;
         private final String topic;
 
-        private AtomicBoolean isStopConsumer = new AtomicBoolean(false);
-        private AtomicLong sleepMs = new AtomicLong(0);
+        private final AtomicBoolean isStopConsumer = new AtomicBoolean(false);
+        private final AtomicLong sleepMs = new AtomicLong(0);
 
 
         public ConsumerThread(String brokers, String topic, String group,
-                              MessageWatched messageHandle) {
+                              MessageWatched<KK, VV> messageHandle) {
             this(brokers, topic, group, messageHandle, null);
         }
 
         public ConsumerThread(String brokers, String topic, String group,
-                              MessageWatched messageHandle, Properties consumerProperties) {
+                              MessageWatched<KK, VV> messageHandle, Properties consumerProperties) {
             this.topic = topic;
             this.messageHandle = messageHandle;
             if (consumerProperties == null) {
@@ -155,12 +152,12 @@ public class KafkaConsumerTemplate<K, V> implements Closeable {
                 String clientId = Thread.currentThread().getName() + "_" + CONSUMER_CLIENT_ID_SEQUENCE.getAndIncrement();
                 this.consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
             }
-            consumer = new KafkaConsumer<K, V>(consumerProperties);
-            consumer.subscribe(Arrays.asList(topic));
+            consumer = new KafkaConsumer<>(consumerProperties);
+            consumer.subscribe(Collections.singletonList(topic));
 
             try {
                 while (!isStopConsumer.get()) {
-                    ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(50));
+                    ConsumerRecords<KK, VV> records = consumer.poll(Duration.ofMillis(50));
 
                     try {
                         // 批量处理，批量提交offset
